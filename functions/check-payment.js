@@ -1,4 +1,4 @@
-const TREXPAY_STATUS_URL = "https://app.trexpay.com.br/api/status";
+const TREXPAY_STATUS_URL = "https://app.trexpayments.com.br/api/status";
 const { getSupabase } = require("./lib/supabase");
 
 function jsonResponse(statusCode, body) {
