@@ -1,4 +1,4 @@
-const TREXPAY_DEPOSIT_URL = "https://app.trexpay.com.br/api/wallet/deposit/payment";
+const TREXPAY_DEPOSIT_URL = "https://app.trexpayments.com.br/api/wallet/deposit/payment";
 const { getSupabase } = require("./lib/supabase");
 
 function jsonResponse(statusCode, body) {
