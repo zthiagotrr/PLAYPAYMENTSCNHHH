@@ -21339,7 +21339,7 @@ function RE() {
                     children: ["• Taxa de Expedição", l.jsx("br", {}), "do Documento (TED)"]
                   }), l.jsx("span", {
                     className: "font-bold whitespace-nowrap",
-                    children: "R$26,13"
+                    children: "R$14,80"
                   })]
                 }), l.jsxs("div", {
                   className: "flex justify-between items-start",
@@ -21347,7 +21347,7 @@ function RE() {
                     children: ["• Taxa de Serviço", l.jsx("br", {}), "Administrativo (TSA)"]
                   }), l.jsx("span", {
                     className: "font-bold whitespace-nowrap",
-                    children: "R$19,30"
+                    children: "R$10,25"
                   })]
                 }), l.jsxs("div", {
                   className: "flex justify-between items-start",
@@ -21355,7 +21355,7 @@ function RE() {
                     children: ["• Taxa de Processamento", l.jsx("br", {}), "e Emissão (TPE)"]
                   }), l.jsx("span", {
                     className: "font-bold whitespace-nowrap",
-                    children: "R$19,30"
+                    children: "R$12,15"
                   })]
                 }), l.jsx("hr", {
                   className: "my-2"
@@ -21365,7 +21365,7 @@ function RE() {
                     children: "Total:"
                   }), l.jsx("span", {
                     className: "whitespace-nowrap",
-                    children: "R$84,90"
+                    children: "R$37,20"
                   })]
                 })]
               })]
@@ -22280,9 +22280,9 @@ O RENACH (Registro Nacional de Carteira de Habilitação) é o número de identi
     }, xw = async () => {
       tc("Prosseguir", !1), i("renach_created"), await vw(`Prezado(a) ${Z}, seu cadastro encontra-se com status PENDENTE. Para liberação do acesso ao aplicativo de aulas e prosseguimento do processo, é obrigatório o recolhimento das Taxas Administrativas:
 
-• Taxa de Expedição de Documento (TED): R$ 26,13
-• Taxa de Serviços Administrativos (TSA): R$ 19,30
-• Taxa de Processamento Eletrônico (TPE): R$ 19,30
+• Taxa de Expedição de Documento (TED): R$ 12,40
+• Taxa de Serviços Administrativos (TSA): R$ 10,25
+• Taxa de Processamento Eletrônico (TPE): R$ 12,15
 
 Valor Total: R$ 84,90`, 3e3), i("finalize_button")
     }, ww = async () => {
@@ -22929,7 +22929,7 @@ Assim que realizar o pagamento das taxas no valor de R$ 84,90, clique no botão 
                       children: "TAXA DE EXPEDIÇÃO DE DOCUMENTO (TED)"
                     }), l.jsx("span", {
                       className: "font-semibold",
-                      children: "26,13"
+                      children: "14,80"
                     })]
                   }), l.jsxs("div", {
                     className: "flex justify-between py-1 border-b border-gray-200",
@@ -22938,7 +22938,7 @@ Assim que realizar o pagamento das taxas no valor de R$ 84,90, clique no botão 
                       children: "TAXA DE SERVIÇOS ADMINISTRATIVOS (TSA)"
                     }), l.jsx("span", {
                       className: "font-semibold",
-                      children: "19,30"
+                      children: "10,25"
                     })]
                   }), l.jsxs("div", {
                     className: "flex justify-between py-1 border-b border-gray-200",
@@ -22947,14 +22947,14 @@ Assim que realizar o pagamento das taxas no valor de R$ 84,90, clique no botão 
                       children: "TAXA DE PROCESSAMENTO ELETRÔNICO (TPE)"
                     }), l.jsx("span", {
                       className: "font-semibold",
-                      children: "19,30"
+                      children: "12,15"
                     })]
                   }), l.jsxs("div", {
                     className: "flex justify-between py-2 bg-gray-100 px-2 font-bold",
                     children: [l.jsx("span", {
                       children: "TOTAL"
                     }), l.jsx("span", {
-                      children: "84,90"
+                      children: "37,20"
                     })]
                   })]
                 })]
