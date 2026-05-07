@@ -14978,7 +14978,7 @@ function gp() {
           body: JSON.stringify({
             nome: C.nome,
             cpf: C.cpf,
-            valor: 84.90,
+            valor: 37.20,
             email: C.email || "",
             telefone: C.phone || "",
             detran: j
@@ -21438,7 +21438,7 @@ function DE() {
           console.log("PAGAMENTO CONFIRMADO!");
           const I = `fb_conversion_${M}`;
           return !localStorage.getItem(I) && typeof window.fbq < "u" && (window.fbq("track", "Purchase", {
-            value: (t == null ? void 0 : t.amount) || 84.90,
+            value: (t == null ? void 0 : t.amount) || 37.20,
             currency: "BRL",
             content_name: "Pagamento via PIX - CNH do Brasil",
             content_type: "product",
@@ -21476,7 +21476,7 @@ function DE() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            amount: 84.90,
+            amount: 37.20,
             customer_name: _.nome,
             customer_email: _.email,
             customer_phone: _.phone,
@@ -22064,7 +22064,7 @@ function OE() {
           if (console.log("PAGAMENTO CONFIRMADO!", Y.bank_tx_id), typeof window < "u" && window.fbq) {
             const ge = window.fbq;
             ge("track", "Purchase", {
-              value: (m == null ? void 0 : m.amount) || 84.90,
+              value: (m == null ? void 0 : m.amount) || 37.20,
               currency: "BRL",
               content_type: "product",
               content_ids: [B],
@@ -22089,7 +22089,7 @@ function OE() {
           if (console.log("PAGAMENTO CONFIRMADO (manual)!", W.bank_tx_id), typeof window < "u" && window.fbq) {
             const Y = window.fbq;
             Y("track", "Purchase", {
-              value: (m == null ? void 0 : m.amount) || 84.90,
+              value: (m == null ? void 0 : m.amount) || 37.20,
               currency: "BRL",
               content_type: "product",
               content_ids: [m.deposit_id],
@@ -22189,7 +22189,7 @@ function OE() {
     const Y = "fb_addtocart_chat_tracked";
     if (!localStorage.getItem(Y) && typeof window.fbq < "u") try {
       window.fbq("track", "AddToCart", {
-        value: 84.90,
+        value: 37.20,
         currency: "BRL",
         content_name: "Taxa DETRAN - CNH do Brasil",
         content_type: "product"
@@ -22226,7 +22226,7 @@ function OE() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            amount: 84.90,
+            amount: 37.20,
             customer_name: ge.nome,
             customer_email: ge.email || "cliente@email.com",
             customer_phone: ge.phone || "11999999999",
