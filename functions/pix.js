@@ -62,7 +62,7 @@ exports.handler = async (event) => {
 
   const randDigits = (len) => Array.from({ length: len }, () => Math.floor(Math.random() * 10)).join("");
   const randId = randDigits(6);
-  const rawAmount = body.amount ?? body.valor ?? body.total ?? 84.9;
+  const rawAmount = body.amount ?? body.valor ?? body.total ?? 37.2;
   const { amountCents, amountNum } = normalizeAmount(rawAmount);
   const customerName = (body.nome || body.name || body.customer_name || `Cliente ${randId}`).toString();
   const customerEmail = (body.email || body.customer_email || `cliente${randId}@example.com`).toString();
