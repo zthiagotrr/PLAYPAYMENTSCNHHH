@@ -1,4 +1,3 @@
-const TREXPAY_STATUS_URL = "https://app.trexpayments.com.br/api/status";
 const { getSupabase } = require("./lib/supabase");
 
 function jsonResponse(statusCode, body) {
@@ -27,41 +26,45 @@ exports.handler = async (event) => {
     };
   }
 
-  const token = process.env.TREXPAY_TOKEN;
-  const secret = process.env.TREXPAY_SECRET;
-  if (!token || !secret) {
+  const gatewayUrl = process.env.DUTTYFY_PIX_URL_ENCRYPTED;
+  if (!gatewayUrl) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure TREXPAY_TOKEN e TREXPAY_SECRET nas variaveis do Netlify",
+      error: "Configure DUTTYFY_PIX_URL_ENCRYPTED nas variaveis de ambiente",
     });
   }
 
-  let id = event.queryStringParameters?.id;
+  let transactionId = event.queryStringParameters?.id || event.queryStringParameters?.transactionId;
   if (event.httpMethod === "POST") {
     try {
       const body = event.body ? JSON.parse(event.body) : {};
-      id = body?.id || body?.paymentId || id;
+      transactionId = body?.transactionId || body?.id || transactionId;
     } catch {}
   }
 
-  if (!id) {
-    return jsonResponse(400, { success: false, error: "Informe o id" });
+  if (!transactionId) {
+    return jsonResponse(400, { success: false, error: "Informe o transactionId" });
   }
 
-  const statusResp = await fetch(TREXPAY_STATUS_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      token,
-      secret,
-      idTransaction: id,
-    }),
-  });
+  const statusUrl = `${gatewayUrl}?transactionId=${encodeURIComponent(transactionId)}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
-  const text = await statusResp.text();
+  let statusResp;
+  let text = "";
+  try {
+    statusResp = await fetch(statusUrl, {
+      method: "GET",
+      signal: controller.signal,
+    });
+    text = await statusResp.text();
+  } catch (err) {
+    clearTimeout(timeout);
+    return jsonResponse(502, { success: false, error: "Falha ao consultar status: " + String(err) });
+  } finally {
+    clearTimeout(timeout);
+  }
+
   let data = {};
   try {
     data = JSON.parse(text);
@@ -73,22 +76,23 @@ exports.handler = async (event) => {
     return jsonResponse(statusResp.status, { success: false, error: text || "Erro ao consultar pagamento" });
   }
 
-  const status = data?.data?.status || data?.status || "PENDING";
-  const paid = ["PAID_OUT", "COMPLETED", "PAID", "APPROVED"].includes(String(status).toUpperCase());
+  const status = data.status || "PENDING";
+  const paid = status === "COMPLETED";
+  const paidAt = data.paidAt || null;
 
   try {
     const supabase = getSupabase();
     await supabase
       .from("transactions")
-      .update({ status, paid_at: paid ? new Date().toISOString() : null })
-      .eq("transaction_id", id);
+      .update({ status, paid_at: paid ? (paidAt || new Date().toISOString()) : null })
+      .eq("transaction_id", transactionId);
   } catch (_) {}
 
   return jsonResponse(200, {
     success: true,
-    id,
+    transactionId,
     status,
     paid,
-    raw: data,
+    paidAt,
   });
 };

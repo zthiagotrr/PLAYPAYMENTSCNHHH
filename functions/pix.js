@@ -1,4 +1,3 @@
-const TREXPAY_DEPOSIT_URL = "https://app.trexpayments.com.br/api/wallet/deposit/payment";
 const { getSupabase } = require("./lib/supabase");
 
 function jsonResponse(statusCode, body) {
@@ -15,20 +14,47 @@ function jsonResponse(statusCode, body) {
 }
 
 function normalizeAmount(rawAmount) {
-  if (rawAmount == null) return { amountCents: 100, amountNum: 1 };
+  if (rawAmount == null) return { amountCents: 4990, amountNum: 49.9 };
   if (typeof rawAmount === "string") {
     const cleaned = rawAmount.replace(/[^\d,.-]/g, "").replace(",", ".");
     const n = parseFloat(cleaned);
-    if (!Number.isFinite(n)) return { amountCents: 100, amountNum: 1 };
-    return { amountCents: Math.max(1, Math.round(n * 100)), amountNum: n };
+    if (!Number.isFinite(n)) return { amountCents: 4990, amountNum: 49.9 };
+    // if already in cents (integer >= 100)
+    if (Number.isInteger(n) && n >= 100) return { amountCents: n, amountNum: n / 100 };
+    return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
   }
   const n = Number(rawAmount);
-  if (!Number.isFinite(n)) return { amountCents: 100, amountNum: 1 };
-  if (Number.isInteger(n) && n >= 1000) {
-    const num = n / 100;
-    return { amountCents: Math.max(1, Math.round(num * 100)), amountNum: num };
+  if (!Number.isFinite(n)) return { amountCents: 4990, amountNum: 49.9 };
+  if (Number.isInteger(n) && n >= 100) return { amountCents: n, amountNum: n / 100 };
+  return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
+}
+
+async function postWithRetry(url, payload) {
+  const delays = [1000, 2000, 4000];
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      // 4xx — do not retry
+      if (resp.status >= 400 && resp.status < 500) return resp;
+      if (resp.ok) return resp;
+      // 5xx — retry
+      lastErr = new Error(`HTTP ${resp.status}`);
+    } catch (err) {
+      clearTimeout(timeout);
+      lastErr = err;
+    }
+    if (attempt < 2) await new Promise((r) => setTimeout(r, delays[attempt]));
   }
-  return { amountCents: Math.max(1, Math.round(n * 100)), amountNum: n };
+  throw lastErr;
 }
 
 exports.handler = async (event) => {
@@ -44,12 +70,11 @@ exports.handler = async (event) => {
     };
   }
 
-  const token = process.env.TREXPAY_TOKEN;
-  const secret = process.env.TREXPAY_SECRET;
-  if (!token || !secret) {
+  const gatewayUrl = process.env.DUTTYFY_PIX_URL_ENCRYPTED;
+  if (!gatewayUrl) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure TREXPAY_TOKEN e TREXPAY_SECRET nas variaveis do Netlify",
+      error: "Configure DUTTYFY_PIX_URL_ENCRYPTED nas variaveis de ambiente",
     });
   }
 
@@ -62,48 +87,43 @@ exports.handler = async (event) => {
 
   const randDigits = (len) => Array.from({ length: len }, () => Math.floor(Math.random() * 10)).join("");
   const randId = randDigits(6);
-  const rawAmount = body.amount ?? body.valor ?? body.total ?? 84.9;
+  const rawAmount = body.amount ?? body.valor ?? body.total ?? 4990;
   const { amountCents, amountNum } = normalizeAmount(rawAmount);
-  const customerName = (body.nome || body.name || body.customer_name || `Cliente ${randId}`).toString();
-  const customerEmail = (body.email || body.customer_email || `cliente${randId}@example.com`).toString();
+  const customerName = (body.nome || body.name || body.customer_name || `Cliente ${randId}`).toString().trim();
+  const customerEmail = (body.email || body.customer_email || `cliente${randId}@example.com`).toString().trim();
   const customerPhone = (body.phone || body.customer_phone || `11${randDigits(9)}`).toString().replace(/\D/g, "");
   const cpfRaw = (body.cpf || body.document || body.customer_cpf || randDigits(11)).toString().replace(/\D/g, "");
   const customerCpf = cpfRaw.padEnd(11, "0").slice(0, 11);
-  const tracking = (body.tracking || body.rastreio || body.codigo || `pedido-${randId}`).toString();
+  const itemTitle = (body.item_title || body.produto || body.plan || "CNH").toString();
+  const utm = body.utm || body.utms || "";
 
   const payload = {
-    token,
-    secret,
-    postback: process.env.POSTBACK_URL || body.postback || undefined,
-    amount: Number(amountNum.toFixed(2)),
-    debtor_name: customerName,
-    email: customerEmail,
-    debtor_document_number: customerCpf,
-    phone: customerPhone.startsWith("55") ? `+${customerPhone}` : `+55${customerPhone}`,
-    method_pay: "pix",
-    src: body.src || body.utm_source || "site",
-    sck: body.sck || body.utm_campaign || tracking,
-    utm_source: body.utm_source,
-    utm_campaign: body.utm_campaign,
-    utm_medium: body.utm_medium,
-    utm_content: body.utm_content,
-    utm_term: body.utm_term,
-    split_email: body.split_email,
-    split_percentage: body.split_percentage,
+    amount: amountCents,
+    customer: {
+      name: customerName,
+      document: customerCpf,
+      email: customerEmail,
+      phone: customerPhone,
+    },
+    item: {
+      title: itemTitle,
+      price: amountCents,
+      quantity: 1,
+    },
+    paymentMethod: "PIX",
+    utm,
   };
 
-  const trexResp = await fetch(TREXPAY_DEPOSIT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  let resp;
+  try {
+    resp = await postWithRetry(gatewayUrl, payload);
+  } catch (err) {
+    return jsonResponse(502, { success: false, error: "Falha ao conectar com gateway: " + String(err) });
+  }
 
-  const text = await trexResp.text();
-  if (!trexResp.ok) {
-    return jsonResponse(trexResp.status, { success: false, error: text || "Erro ao criar PIX" });
+  const text = await resp.text();
+  if (!resp.ok) {
+    return jsonResponse(resp.status, { success: false, error: text || "Erro ao criar cobrança PIX" });
   }
 
   let data = {};
@@ -113,62 +133,31 @@ exports.handler = async (event) => {
     data = {};
   }
 
-  const pixData = data?.pix || data?.data || data;
-  const brcode =
-    pixData?.pixCode ||
-    pixData?.payload ||
-    pixData?.brcode ||
-    pixData?.qr_code_text ||
-    pixData?.emv ||
-    pixData?.qrcode ||
-    null;
-  const qrcodeFinal =
-    pixData?.qr_code_image_url ||
-    pixData?.qrcode_url ||
-    pixData?.qr_code_base64 ||
-    pixData?.qrCodeImage ||
-    pixData?.image ||
-    null;
-  const paymentId =
-    pixData?.idTransaction ||
-    pixData?.transactionId ||
-    pixData?.id ||
-    pixData?.txid ||
-    null;
+  const pixCode = data.pixCode || null;
+  const transactionId = data.transactionId || null;
 
   try {
     const supabase = getSupabase();
     await supabase.from("transactions").insert({
-      transaction_id: paymentId,
+      transaction_id: transactionId,
       amount: amountNum,
       customer_name: customerName,
       customer_email: customerEmail,
       customer_cpf: customerCpf,
       customer_phone: customerPhone,
-      tracking: tracking,
       status: "PENDING",
-      brcode,
-      qrcode: qrcodeFinal,
+      brcode: pixCode,
     });
   } catch (_) {}
 
   return jsonResponse(200, {
     success: true,
-    pix_code: brcode,
-    transaction_id: paymentId,
-    deposit_id: paymentId,
-    qrcode: qrcodeFinal,
-    amount: amountNum,
-    key: null,
-    brcode,
-    payload: brcode,
-    pixCode: brcode,
-    pix: {
-      key: null,
-      brcode,
-      qrcode: qrcodeFinal,
-      payload: brcode,
-    },
-    raw: data,
+    pixCode,
+    pix_code: pixCode,
+    brcode: pixCode,
+    payload: pixCode,
+    transaction_id: transactionId,
+    transactionId,
+    status: data.status || "PENDING",
   });
 };
