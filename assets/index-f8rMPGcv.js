@@ -24366,7 +24366,7 @@ function uT() {
         style: {
           color: "#0c326f"
         },
-        children: "CNH do Brasil: Governo libera carteira de motorista 100% gratuita e sem necessidade de autoescola"
+        children: "CNH do Brasil: Governo libera carteira de motorista 100% online e sem necessidade de autoescola"
       }), l.jsxs("p", {
         className: "text-base leading-relaxed mb-6",
         style: {
