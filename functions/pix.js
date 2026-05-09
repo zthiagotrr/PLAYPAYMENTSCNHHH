@@ -150,14 +150,16 @@ exports.handler = async (event) => {
     });
   } catch (_) {}
 
-  return jsonResponse(200, {
-    success: true,
-    pixCode,
-    pix_code: pixCode,
-    brcode: pixCode,
-    payload: pixCode,
-    transaction_id: transactionId,
-    transactionId,
-    status: data.status || "PENDING",
-  });
+ return jsonResponse(200, {
+  success: true,
+  pixCode,
+  pix_code: pixCode,
+  brcode: pixCode,
+  payload: pixCode,
+  transaction_id: transactionId,
+  transactionId,
+  deposit_id: transactionId,
+  status: data.status || "PENDING",
+});
 };
+
