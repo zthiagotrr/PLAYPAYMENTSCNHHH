@@ -14933,22 +14933,22 @@ function gp() {
         currency: "BRL",
         content_name: "Taxa Emissao CNH - CNH do Brasil",
         content_type: "product"
-      }), console.log("Facebook Pixel (3270339329986286): Purchase tracked"), window.fbq("trackSingle", "1555494242118668", "Purchase", {
+      }), console.log("Facebook Pixel (4327697327497010): Purchase tracked"), window.fbq("trackSingle", "1555494242118668", "Purchase", {
         value: 74.9,
         currency: "BRL",
         content_name: "Taxa Emissao CNH - CNH do Brasil",
         content_type: "product"
-      }), console.log("Facebook Pixel (1555494242118668): Purchase tracked"), window.fbq("trackSingle", "1154359756859567", "Purchase", {
+      }), console.log("Facebook Pixel (4327697327497010): Purchase tracked"), window.fbq("trackSingle", "1154359756859567", "Purchase", {
         value: 74.9,
         currency: "BRL",
         content_name: "Taxa Emissao CNH - CNH do Brasil",
         content_type: "product"
-      }), console.log("Facebook Pixel (1154359756859567): Purchase tracked"), window.fbq("trackSingle", "2062889337802425", "Purchase", {
+      }), console.log("Facebook Pixel (4327697327497010): Purchase tracked"), window.fbq("trackSingle", "2062889337802425", "Purchase", {
         value: 74.9,
         currency: "BRL",
         content_name: "Taxa Emissao CNH - CNH do Brasil",
         content_type: "product"
-      }), console.log("Facebook Pixel (2062889337802425): Purchase tracked")
+      }), console.log("Facebook Pixel (4327697327497010): Purchase tracked")
     } catch (A) {
       console.error("Facebook Pixel error:", A)
     }
