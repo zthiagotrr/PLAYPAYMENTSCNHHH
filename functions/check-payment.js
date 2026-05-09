@@ -76,9 +76,9 @@ exports.handler = async (event) => {
     return jsonResponse(statusResp.status, { success: false, error: text || "Erro ao consultar pagamento" });
   }
 
-  const status = data.status || "PENDING";
-  const paid = status === "COMPLETED";
-  const paidAt = data.paidAt || null;
+ const paid = (data.status || "PENDING") === "COMPLETED";
+const status = paid ? "paid" : (data.status || "PENDING").toLowerCase();
+const paidAt = data.paidAt || null;
 
   try {
     const supabase = getSupabase();
