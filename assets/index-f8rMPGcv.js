@@ -14898,7 +14898,7 @@ function gp() {
     if (w.current) return;
     w.current = !0;
     const p = "ttq_purchase_success_tracked";
-    if (localStorage.getItem(p)) return;
+    if (!1) return;
     const m = localStorage.getItem("userData");
     let b = "",
       C = "";
