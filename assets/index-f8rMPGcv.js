@@ -14949,7 +14949,7 @@ function gp() {
         content_name: "Taxa Emissao CNH - CNH do Brasil",
         content_type: "product"
       }), console.log("Facebook Pixel (4327697327497010): Purchase tracked")
-    } catch (A) {console.error("Facebook Pixel error:", A)} try {window.utmify && window.utmify("track", "Purchase", {value: 74.9, currency: "BRL"})} catch(A) {}
+    } catch (A) {console.error("Facebook Pixel error:", A)} try {window.utmify && window.utmify("track", "Purchase", {value: 37.2, currency: "BRL"})} catch(A) {}
 
    
     localStorage.setItem(p, new Date().toISOString())
