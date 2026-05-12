@@ -13037,16 +13037,11 @@ function d3() {
 function f3() {
   return l.jsxs(l.Fragment, {
     children: [l.jsx("header", {
-      children: l.jsx("iframe", {
-        src: "https://www.youtube.com/embed/xviWDiNGUc8",
-        title: "CNH do Brasil",
-        allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-        allowFullScreen: true,
+      children: l.jsx("img", {
+        src: "https://i.ibb.co/WGrsWGN/IMG-1297.jpg",
+        alt: "Imagem de cabeçalho com design moderno e cores vibrantes",
         style: {
-          width: "100%",
-          aspectRatio: "16/9",
-          border: 0,
-          display: "block"
+          width: "100%"
         }
       })
     }), l.jsxs("div", {
