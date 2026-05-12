@@ -1,7 +1,5 @@
 const { getSupabase } = require("./lib/supabase");
 
-const VENO_BASE = "https://beta.venopayments.com/api";
-
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -30,7 +28,7 @@ function normalizeAmount(rawAmount) {
   return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
 }
 
-async function postWithRetry(url, authHeader, payload) {
+async function postWithRetry(url, payload) {
   const delays = [1000, 2000, 4000];
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -39,7 +37,7 @@ async function postWithRetry(url, authHeader, payload) {
     try {
       const resp = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: authHeader },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
@@ -69,11 +67,11 @@ exports.handler = async (event) => {
     };
   }
 
-  const apiKey = process.env.VENO_API_KEY;
-  if (!apiKey) {
+  const gatewayUrl = process.env.DUTTYFY_PIX_URL_ENCRYPTED;
+  if (!gatewayUrl) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure VENO_API_KEY nas variaveis de ambiente",
+      error: "Configure DUTTYFY_PIX_URL_ENCRYPTED nas variaveis de ambiente",
     });
   }
 
@@ -94,30 +92,28 @@ exports.handler = async (event) => {
   const cpfRaw = (body.cpf || body.document || body.customer_cpf || randDigits(11)).toString().replace(/\D/g, "");
   const customerCpf = cpfRaw.padEnd(11, "0").slice(0, 11);
   const itemTitle = (body.item_title || body.produto || body.plan || "CNH").toString();
-
-  const utmFields = {};
-  for (const key of ["utm_source", "utm_campaign", "utm_medium", "utm_content", "utm_term"]) {
-    if (body[key]) utmFields[key] = String(body[key]);
-  }
-  if (!utmFields.utm_source && (body.utm || body.utms)) {
-    utmFields.utm_source = String(body.utm || body.utms);
-  }
+  const utm = body.utm || body.utms || "";
 
   const payload = {
     amount: amountCents,
-    description: itemTitle,
-    payer: {
+    customer: {
       name: customerName,
-      email: customerEmail,
       document: customerCpf,
+      email: customerEmail,
       phone: customerPhone,
     },
-    ...utmFields,
+    item: {
+      title: itemTitle,
+      price: amountCents,
+      quantity: 1,
+    },
+    paymentMethod: "PIX",
+    utm,
   };
 
   let resp;
   try {
-    resp = await postWithRetry(`${VENO_BASE}/v1/pix`, `Bearer ${apiKey}`, payload);
+    resp = await postWithRetry(gatewayUrl, payload);
   } catch (err) {
     return jsonResponse(502, { success: false, error: "Falha ao conectar com gateway: " + String(err) });
   }
@@ -134,8 +130,8 @@ exports.handler = async (event) => {
     data = {};
   }
 
-  const pixCode = data.qr_code || data.pix_copy_paste || null;
-  const transactionId = data.id || null;
+  const pixCode = data.pixCode || null;
+  const transactionId = data.transactionId || null;
 
   try {
     const supabase = getSupabase();
