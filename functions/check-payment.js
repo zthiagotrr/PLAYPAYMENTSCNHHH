@@ -1,5 +1,7 @@
 const { getSupabase } = require("./lib/supabase");
 
+const VENO_BASE = "https://beta.venopayments.com/api";
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -26,11 +28,11 @@ exports.handler = async (event) => {
     };
   }
 
-  const gatewayUrl = process.env.DUTTYFY_PIX_URL_ENCRYPTED;
-  if (!gatewayUrl) {
+  const apiKey = process.env.VENO_API_KEY;
+  if (!apiKey) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure DUTTYFY_PIX_URL_ENCRYPTED nas variaveis de ambiente",
+      error: "Configure VENO_API_KEY nas variaveis de ambiente",
     });
   }
 
@@ -46,15 +48,15 @@ exports.handler = async (event) => {
     return jsonResponse(400, { success: false, error: "Informe o transactionId" });
   }
 
-  const statusUrl = `${gatewayUrl}?transactionId=${encodeURIComponent(transactionId)}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   let statusResp;
   let text = "";
   try {
-    statusResp = await fetch(statusUrl, {
+    statusResp = await fetch(`${VENO_BASE}/v1/pix/${encodeURIComponent(transactionId)}/status`, {
       method: "GET",
+      headers: { Authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
     });
     text = await statusResp.text();
@@ -76,9 +78,9 @@ exports.handler = async (event) => {
     return jsonResponse(statusResp.status, { success: false, error: text || "Erro ao consultar pagamento" });
   }
 
- const paid = (data.status || "PENDING") === "COMPLETED";
-const status = paid ? "paid" : (data.status || "PENDING").toLowerCase();
-const paidAt = data.paidAt || null;
+  const paid = data.status === "paid";
+  const status = paid ? "paid" : (data.status || "pending").toLowerCase();
+  const paidAt = data.paid_at || null;
 
   try {
     const supabase = getSupabase();

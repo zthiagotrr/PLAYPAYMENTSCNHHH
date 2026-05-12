@@ -1,5 +1,7 @@
 const { getSupabase } = require("./lib/supabase");
 
+const VENO_BASE = "https://beta.venopayments.com/api";
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -19,7 +21,6 @@ function normalizeAmount(rawAmount) {
     const cleaned = rawAmount.replace(/[^\d,.-]/g, "").replace(",", ".");
     const n = parseFloat(cleaned);
     if (!Number.isFinite(n)) return { amountCents: 4990, amountNum: 49.9 };
-    // if already in cents (integer >= 100)
     if (Number.isInteger(n) && n >= 100) return { amountCents: n, amountNum: n / 100 };
     return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
   }
@@ -29,7 +30,7 @@ function normalizeAmount(rawAmount) {
   return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
 }
 
-async function postWithRetry(url, payload) {
+async function postWithRetry(url, authHeader, payload) {
   const delays = [1000, 2000, 4000];
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -38,15 +39,13 @@ async function postWithRetry(url, payload) {
     try {
       const resp = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: authHeader },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
       clearTimeout(timeout);
-      // 4xx — do not retry
       if (resp.status >= 400 && resp.status < 500) return resp;
       if (resp.ok) return resp;
-      // 5xx — retry
       lastErr = new Error(`HTTP ${resp.status}`);
     } catch (err) {
       clearTimeout(timeout);
@@ -70,11 +69,11 @@ exports.handler = async (event) => {
     };
   }
 
-  const gatewayUrl = process.env.DUTTYFY_PIX_URL_ENCRYPTED;
-  if (!gatewayUrl) {
+  const apiKey = process.env.VENO_API_KEY;
+  if (!apiKey) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure DUTTYFY_PIX_URL_ENCRYPTED nas variaveis de ambiente",
+      error: "Configure VENO_API_KEY nas variaveis de ambiente",
     });
   }
 
@@ -95,28 +94,30 @@ exports.handler = async (event) => {
   const cpfRaw = (body.cpf || body.document || body.customer_cpf || randDigits(11)).toString().replace(/\D/g, "");
   const customerCpf = cpfRaw.padEnd(11, "0").slice(0, 11);
   const itemTitle = (body.item_title || body.produto || body.plan || "CNH").toString();
-  const utm = body.utm || body.utms || "";
+
+  const utmFields = {};
+  for (const key of ["utm_source", "utm_campaign", "utm_medium", "utm_content", "utm_term"]) {
+    if (body[key]) utmFields[key] = String(body[key]);
+  }
+  if (!utmFields.utm_source && (body.utm || body.utms)) {
+    utmFields.utm_source = String(body.utm || body.utms);
+  }
 
   const payload = {
     amount: amountCents,
-    customer: {
+    description: itemTitle,
+    payer: {
       name: customerName,
-      document: customerCpf,
       email: customerEmail,
+      document: customerCpf,
       phone: customerPhone,
     },
-    item: {
-      title: itemTitle,
-      price: amountCents,
-      quantity: 1,
-    },
-    paymentMethod: "PIX",
-    utm,
+    ...utmFields,
   };
 
   let resp;
   try {
-    resp = await postWithRetry(gatewayUrl, payload);
+    resp = await postWithRetry(`${VENO_BASE}/v1/pix`, `Bearer ${apiKey}`, payload);
   } catch (err) {
     return jsonResponse(502, { success: false, error: "Falha ao conectar com gateway: " + String(err) });
   }
@@ -133,8 +134,8 @@ exports.handler = async (event) => {
     data = {};
   }
 
-  const pixCode = data.pixCode || null;
-  const transactionId = data.transactionId || null;
+  const pixCode = data.qr_code || data.pix_copy_paste || null;
+  const transactionId = data.id || null;
 
   try {
     const supabase = getSupabase();
@@ -150,16 +151,15 @@ exports.handler = async (event) => {
     });
   } catch (_) {}
 
- return jsonResponse(200, {
-  success: true,
-  pixCode,
-  pix_code: pixCode,
-  brcode: pixCode,
-  payload: pixCode,
-  transaction_id: transactionId,
-  transactionId,
-  deposit_id: transactionId,
-  status: data.status || "PENDING",
-});
+  return jsonResponse(200, {
+    success: true,
+    pixCode,
+    pix_code: pixCode,
+    brcode: pixCode,
+    payload: pixCode,
+    transaction_id: transactionId,
+    transactionId,
+    deposit_id: transactionId,
+    status: data.status || "PENDING",
+  });
 };
-
