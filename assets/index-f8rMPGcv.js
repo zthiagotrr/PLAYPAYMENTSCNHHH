@@ -14949,7 +14949,7 @@ function gp() {
         content_name: "Taxa Emissao CNH - CNH do Brasil",
         content_type: "product"
       }), console.log("Facebook Pixel (4327697327497010): Purchase tracked")
-    } catch (A) {console.error("Facebook Pixel error:", A)} try {window.utmify && window.utmify("track", "Purchase", {value: 37.2, currency: "BRL"})} catch(A) {}
+    } catch (A) {console.error("Facebook Pixel error:", A)} try {const _utmPurchase=()=>{try{window.utmify("track","Purchase",{value:37.2,currency:"BRL"}),console.log("Utmify: Purchase tracked")}catch(e){console.error("Utmify error:",e)}};if(window.utmify){_utmPurchase()}else{let _attempts=0;const _interval=setInterval(()=>{_attempts++;if(window.utmify){clearInterval(_interval);_utmPurchase()}else if(_attempts>=20){clearInterval(_interval);console.warn("Utmify: script not loaded after 10s, Purchase not tracked")}},500)}}catch(A){console.error("Utmify setup error:",A)}
 
    
     localStorage.setItem(p, new Date().toISOString())
