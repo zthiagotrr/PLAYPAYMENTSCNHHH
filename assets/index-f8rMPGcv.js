@@ -13021,15 +13021,7 @@ function d3() {
             }), o ? "Acessando..." : "Continuar"]
           })
         })]
-      }), l.jsx("label", {
-        id: "title-outras-op",
-        children: "Outras opções de identificação:"
-      }), l.jsx("hr", {
-        id: "hr-outras-op",
-        style: {
-          margin: "0 0 0"
-        }
-      }), l.jsx(c3, {})]
+      })]
     })
   })
 }
@@ -21312,7 +21304,7 @@ function RE() {
           className: "text-center space-y-2 pb-6 border-b",
           children: [l.jsx(ui, {
             className: "text-2xl font-bold text-gray-900",
-            children: "Finalizar Cadastro"
+            children: "Realizar Pagamento"
           }), l.jsx("p", {
             className: "text-gray-600",
             children: "Programa CNH do Brasil"
@@ -21400,7 +21392,7 @@ function RE() {
             }), l.jsx(jn, {
               className: "w-full bg-green-600 hover:bg-green-700 text-white py-7 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl",
               onClick: s,
-              children: "Finalizar Cadastro"
+              children: "Realizar Pagamento"
             })]
           })
         })]
@@ -22045,7 +22037,7 @@ const Rg = {
 
 function OE() {
   var Ch;
-  const [, e] = In(), [t, n] = x.useState([]), [r, s] = x.useState(!1), [o, i] = x.useState("initial"), [a, c] = x.useState(""), [u, d] = x.useState(""), [f, h] = x.useState(null), [y, w] = x.useState(null), v = x.useRef(null), S = x.useRef(!1), [g, p] = x.useState(""), [m, b] = x.useState(null), [C, j] = x.useState(!1), [A, P] = x.useState(!1), [M, _] = x.useState(""), [G, I] = x.useState("pending"), [$, U] = x.useState(600), [te, re] = x.useState(null), [X, D] = x.useState(!1), [R, L] = x.useState([]), [J, oe] = x.useState(!1), [ze, Ue] = x.useState(!1), [wr, Je] = x.useState(""), [dn, to] = x.useState(""), [no, ro] = x.useState(!1), [so, ki] = x.useState(!1), [br, Ri] = x.useState(null), Yl = x.useRef(null), [xh, wh] = x.useState([]), [N, E] = x.useState(!1), [T, z] = x.useState([]), V = x.useRef(null), [F, Q] = x.useState(""), Z = f != null && f.nome ? _i(f.nome.split(" ")[0]) : "Cidadão", Te = () => ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"].map(W => ({
+  const [, e] = In(), [t, n] = x.useState([]), [r, s] = x.useState(!1), [o, i] = x.useState("initial"), [a, c] = x.useState(""), [u, d] = x.useState(""), [f, h] = x.useState(null), [y, w] = x.useState(null), v = x.useRef(null), S = x.useRef(!1), [g, p] = x.useState(""), [m, b] = x.useState(null), [C, j] = x.useState(!1), [A, P] = x.useState(!1), [M, _] = x.useState(""), [G, I] = x.useState("pending"), [$, U] = x.useState(600), [te, re] = x.useState(null), [X, D] = x.useState(!1), [R, L] = x.useState([]), [J, oe] = x.useState(!1), [ze, Ue] = x.useState(!1), [wr, Je] = x.useState(""), [dn, to] = x.useState(""), [no, ro] = x.useState(!1), [so, ki] = x.useState(!1), [br, Ri] = x.useState(null), Yl = x.useRef(null), [xh, wh] = x.useState([]), [N, E] = x.useState(!1), [T, z] = x.useState([]), V = x.useRef(null), [F, Q] = x.useState(""), Z = f != null && f.nome ? _i(f.nome.split(" ")[0]) : "Cidadão", Te = () => ["MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"].map(W => ({
     month: `${W}/2026`,
     vagas: Math.floor(Math.random() * 9) + 4
   })), ke = () => {
@@ -22805,7 +22797,7 @@ Assim que realizar o pagamento das taxas no valor de R$ 37,20, clique no botão 
               className: "flex items-center justify-center gap-2 p-4 bg-[#1351B4] text-white rounded-sm shadow-md hover:bg-[#0D3A8C] transition-all",
               children: l.jsx("span", {
                 className: "font-medium",
-                children: "Finalizar Cadastro"
+                children: "Realizar Pagamento"
               })
             })
           }), o === "generating_pix" && l.jsx("div", {
@@ -23063,6 +23055,13 @@ Assim que realizar o pagamento das taxas no valor de R$ 37,20, clique no botão 
                     }), l.jsx("span", {
                       children: "Copiar Código PIX"
                     })]
+                  })
+                }), l.jsx("div", {
+                  className: "mt-3 mb-2",
+                  children: l.jsx("img", {
+                    src: "/img/pix-tutorial.png",
+                    alt: "Como pagar com Pix Copia e Cola",
+                    className: "w-full rounded-lg border border-gray-200 shadow-sm"
                   })
                 }), l.jsxs("div", {
                   className: "mt-3 flex justify-between text-sm",
@@ -24455,10 +24454,13 @@ function uT() {
         })]
       }), l.jsx("div", {
         className: "mb-8",
-        children: l.jsx("img", {
-          src: "https://img.portalmarcossantos.com.br/wp-content/uploads/2025/12/09150903/Detran-AM-participa-do-lancamento-do-programa-CNH-do-Brasil-confira-novas-regras-para-obter-o-documento.jpeg",
-          alt: "Lançamento do Programa CNH do Brasil",
-          className: "w-full rounded-lg shadow-md"
+        style: {position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", borderRadius: "0.5rem", boxShadow: "0 4px 6px rgba(0,0,0,0.1)"},
+        children: l.jsx("iframe", {
+          src: "https://www.youtube.com/embed/Bn8olS-_EsQ",
+          title: "Lançamento do Programa CNH do Brasil",
+          allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+          allowFullScreen: true,
+          style: {position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0}
         })
       }), l.jsxs("article", {
         className: "prose prose-lg max-w-none",
