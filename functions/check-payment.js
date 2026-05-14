@@ -1,5 +1,7 @@
 const { getSupabase } = require("./lib/supabase");
 
+const GOTHAM_BASE = "https://api.gothampaybr.com";
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -26,11 +28,13 @@ exports.handler = async (event) => {
     };
   }
 
-  const gatewayUrl = process.env.DUTTYFY_PIX_URL_ENCRYPTED;
-  if (!gatewayUrl) {
+  const clientId = process.env.GOTHAM_CLIENT_ID;
+  const clientSecret = process.env.GOTHAM_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure DUTTYFY_PIX_URL_ENCRYPTED nas variaveis de ambiente",
+      error: "Configure GOTHAM_CLIENT_ID e GOTHAM_CLIENT_SECRET nas variaveis de ambiente",
     });
   }
 
@@ -46,15 +50,18 @@ exports.handler = async (event) => {
     return jsonResponse(400, { success: false, error: "Informe o transactionId" });
   }
 
-  const statusUrl = `${gatewayUrl}?transactionId=${encodeURIComponent(transactionId)}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   let statusResp;
   let text = "";
   try {
-    statusResp = await fetch(statusUrl, {
+    statusResp = await fetch(`${GOTHAM_BASE}/api/v1/pix/cashin/${encodeURIComponent(transactionId)}`, {
       method: "GET",
+      headers: {
+        "X-Client-Id": clientId,
+        "X-Client-Secret": clientSecret,
+      },
       signal: controller.signal,
     });
     text = await statusResp.text();
@@ -76,9 +83,10 @@ exports.handler = async (event) => {
     return jsonResponse(statusResp.status, { success: false, error: text || "Erro ao consultar pagamento" });
   }
 
-  const paid = (data.status || "PENDING") === "COMPLETED";
-  const status = paid ? "paid" : (data.status || "PENDING").toLowerCase();
-  const paidAt = data.paidAt || null;
+  const rawStatus = (data.status || "PENDING").toUpperCase();
+  const paid = rawStatus === "PAID" || rawStatus === "COMPLETED" || rawStatus === "APROVADO" || rawStatus === "CONCLUIDO";
+  const status = paid ? "paid" : rawStatus.toLowerCase();
+  const paidAt = data.paidAt || data.paid_at || data.dataPagamento || null;
 
   try {
     const supabase = getSupabase();

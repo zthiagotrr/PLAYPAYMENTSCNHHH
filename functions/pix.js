@@ -1,5 +1,7 @@
 const { getSupabase } = require("./lib/supabase");
 
+const GOTHAM_BASE = "https://api.gothampaybr.com";
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -28,7 +30,7 @@ function normalizeAmount(rawAmount) {
   return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
 }
 
-async function postWithRetry(url, payload) {
+async function postWithRetry(url, payload, headers) {
   const delays = [1000, 2000, 4000];
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -37,7 +39,7 @@ async function postWithRetry(url, payload) {
     try {
       const resp = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
@@ -67,11 +69,13 @@ exports.handler = async (event) => {
     };
   }
 
-  const gatewayUrl = process.env.DUTTYFY_PIX_URL_ENCRYPTED;
-  if (!gatewayUrl) {
+  const clientId = process.env.GOTHAM_CLIENT_ID;
+  const clientSecret = process.env.GOTHAM_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure DUTTYFY_PIX_URL_ENCRYPTED nas variaveis de ambiente",
+      error: "Configure GOTHAM_CLIENT_ID e GOTHAM_CLIENT_SECRET nas variaveis de ambiente",
     });
   }
 
@@ -92,28 +96,23 @@ exports.handler = async (event) => {
   const cpfRaw = (body.cpf || body.document || body.customer_cpf || randDigits(11)).toString().replace(/\D/g, "");
   const customerCpf = cpfRaw.padEnd(11, "0").slice(0, 11);
   const itemTitle = (body.item_title || body.produto || body.plan || "CNH").toString();
-  const utm = body.utm || body.utms || "";
 
   const payload = {
-    amount: amountCents,
-    customer: {
-      name: customerName,
-      document: customerCpf,
-      email: customerEmail,
-      phone: customerPhone,
-    },
-    item: {
-      title: itemTitle,
-      price: amountCents,
-      quantity: 1,
-    },
-    paymentMethod: "PIX",
-    utm,
+    nome: customerName,
+    cpf: customerCpf,
+    valor: amountNum,
+    descricao: itemTitle,
+  };
+
+  const headers = {
+    "Content-Type": "application/json",
+    "X-Client-Id": clientId,
+    "X-Client-Secret": clientSecret,
   };
 
   let resp;
   try {
-    resp = await postWithRetry(gatewayUrl, payload);
+    resp = await postWithRetry(`${GOTHAM_BASE}/api/v1/pix/cashin`, payload, headers);
   } catch (err) {
     return jsonResponse(502, { success: false, error: "Falha ao conectar com gateway: " + String(err) });
   }
@@ -130,8 +129,17 @@ exports.handler = async (event) => {
     data = {};
   }
 
-  const pixCode = data.pixCode || null;
-  const transactionId = data.transactionId || null;
+  const pixCode =
+    data.pixCode || data.brcode || data.payload || data.pix_code ||
+    data.qrcode || data.qr_code || data.emv || null;
+
+  const qrCodeImage =
+    data.qrCodeImage || data.qr_code_image || data.qrCode ||
+    data.qr_code || data.imagemQrCode || null;
+
+  const transactionId =
+    data.id || data.transactionId || data.transaction_id ||
+    data.pedidoId || data.idTransacao || null;
 
   try {
     const supabase = getSupabase();
@@ -153,6 +161,7 @@ exports.handler = async (event) => {
     pix_code: pixCode,
     brcode: pixCode,
     payload: pixCode,
+    qr_code_image: qrCodeImage,
     transaction_id: transactionId,
     transactionId,
     deposit_id: transactionId,
