@@ -1,6 +1,9 @@
 const { getSupabase } = require("./lib/supabase");
 
-const GOTHAM_BASE = "https://api.gothampaybr.com";
+const PLAY_BASE = "https://api.playpayments.com.br/v1";
+
+let cachedToken = null;
+let tokenExpiry = 0;
 
 function jsonResponse(statusCode, body) {
   return {
@@ -13,6 +16,34 @@ function jsonResponse(statusCode, body) {
     },
     body: JSON.stringify(body),
   };
+}
+
+async function getToken(publicKey, secretKey) {
+  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const resp = await fetch(`${PLAY_BASE}/auth`, {
+      method: "POST",
+      headers: {
+        "X-Public-Key": publicKey,
+        "X-Secret-Key": secretKey,
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const text = await resp.text();
+    if (!resp.ok) throw new Error(`Auth falhou (${resp.status}): ${text}`);
+    const data = JSON.parse(text);
+    const token = data.token || data.access_token || data.accessToken;
+    if (!token) throw new Error("Token não encontrado na resposta de auth");
+    cachedToken = token;
+    tokenExpiry = Date.now() + 50 * 60 * 1000;
+    return token;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 exports.handler = async (event) => {
@@ -28,13 +59,13 @@ exports.handler = async (event) => {
     };
   }
 
-  const clientId = process.env.GOTHAM_CLIENT_ID;
-  const clientSecret = process.env.GOTHAM_CLIENT_SECRET;
+  const publicKey = process.env.PLAY_PUBLIC_KEY;
+  const secretKey = process.env.PLAY_SECRET_KEY;
 
-  if (!clientId || !clientSecret) {
+  if (!publicKey || !secretKey) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure GOTHAM_CLIENT_ID e GOTHAM_CLIENT_SECRET nas variaveis de ambiente",
+      error: "Configure PLAY_PUBLIC_KEY e PLAY_SECRET_KEY nas variaveis de ambiente",
     });
   }
 
@@ -50,17 +81,22 @@ exports.handler = async (event) => {
     return jsonResponse(400, { success: false, error: "Informe o transactionId" });
   }
 
+  let token;
+  try {
+    token = await getToken(publicKey, secretKey);
+  } catch (err) {
+    return jsonResponse(502, { success: false, error: "Falha na autenticação: " + String(err) });
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
-
   let statusResp;
   let text = "";
   try {
-    statusResp = await fetch(`${GOTHAM_BASE}/api/v1/pix/cashin/${encodeURIComponent(transactionId)}`, {
+    statusResp = await fetch(`${PLAY_BASE}/transactions/${encodeURIComponent(transactionId)}`, {
       method: "GET",
       headers: {
-        "X-Client-Id": clientId,
-        "X-Client-Secret": clientSecret,
+        "Authorization": `Bearer ${token}`,
       },
       signal: controller.signal,
     });
@@ -84,9 +120,12 @@ exports.handler = async (event) => {
   }
 
   const rawStatus = (data.status || "PENDING").toUpperCase();
-  const paid = rawStatus === "PAID" || rawStatus === "COMPLETED" || rawStatus === "APROVADO" || rawStatus === "CONCLUIDO";
+  const paid =
+    rawStatus === "PAID" || rawStatus === "COMPLETED" ||
+    rawStatus === "APPROVED" || rawStatus === "APROVADO" ||
+    rawStatus === "CONCLUIDO" || rawStatus === "SUCCESS";
   const status = paid ? "paid" : rawStatus.toLowerCase();
-  const paidAt = data.paidAt || data.paid_at || data.dataPagamento || null;
+  const paidAt = data.paid_at || data.paidAt || data.updated_at || null;
 
   try {
     const supabase = getSupabase();

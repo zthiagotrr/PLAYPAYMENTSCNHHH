@@ -1,6 +1,9 @@
 const { getSupabase } = require("./lib/supabase");
 
-const GOTHAM_BASE = "https://api.gothampaybr.com";
+const PLAY_BASE = "https://api.playpayments.com.br/v1";
+
+let cachedToken = null;
+let tokenExpiry = 0;
 
 function jsonResponse(statusCode, body) {
   return {
@@ -30,30 +33,32 @@ function normalizeAmount(rawAmount) {
   return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
 }
 
-async function postWithRetry(url, payload, headers) {
-  const delays = [1000, 2000, 4000];
-  let lastErr;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    try {
-      const resp = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      if (resp.status >= 400 && resp.status < 500) return resp;
-      if (resp.ok) return resp;
-      lastErr = new Error(`HTTP ${resp.status}`);
-    } catch (err) {
-      clearTimeout(timeout);
-      lastErr = err;
-    }
-    if (attempt < 2) await new Promise((r) => setTimeout(r, delays[attempt]));
+async function getToken(publicKey, secretKey) {
+  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const resp = await fetch(`${PLAY_BASE}/auth`, {
+      method: "POST",
+      headers: {
+        "X-Public-Key": publicKey,
+        "X-Secret-Key": secretKey,
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const text = await resp.text();
+    if (!resp.ok) throw new Error(`Auth falhou (${resp.status}): ${text}`);
+    const data = JSON.parse(text);
+    const token = data.token || data.access_token || data.accessToken;
+    if (!token) throw new Error("Token não encontrado na resposta de auth");
+    cachedToken = token;
+    tokenExpiry = Date.now() + 50 * 60 * 1000; // cache por 50 min
+    return token;
+  } finally {
+    clearTimeout(timeout);
   }
-  throw lastErr;
 }
 
 exports.handler = async (event) => {
@@ -69,13 +74,13 @@ exports.handler = async (event) => {
     };
   }
 
-  const clientId = process.env.GOTHAM_CLIENT_ID;
-  const clientSecret = process.env.GOTHAM_CLIENT_SECRET;
+  const publicKey = process.env.PLAY_PUBLIC_KEY;
+  const secretKey = process.env.PLAY_SECRET_KEY;
 
-  if (!clientId || !clientSecret) {
+  if (!publicKey || !secretKey) {
     return jsonResponse(500, {
       success: false,
-      error: "Configure GOTHAM_CLIENT_ID e GOTHAM_CLIENT_SECRET nas variaveis de ambiente",
+      error: "Configure PLAY_PUBLIC_KEY e PLAY_SECRET_KEY nas variaveis de ambiente",
     });
   }
 
@@ -89,32 +94,48 @@ exports.handler = async (event) => {
   const randDigits = (len) => Array.from({ length: len }, () => Math.floor(Math.random() * 10)).join("");
   const randId = randDigits(6);
   const rawAmount = body.amount ?? body.valor ?? body.total ?? 4990;
-  const { amountCents, amountNum } = normalizeAmount(rawAmount);
+  const { amountNum } = normalizeAmount(rawAmount);
   const customerName = (body.nome || body.name || body.customer_name || `Cliente ${randId}`).toString().trim();
   const customerEmail = (body.email || body.customer_email || `cliente${randId}@example.com`).toString().trim();
   const customerPhone = (body.phone || body.customer_phone || `11${randDigits(9)}`).toString().replace(/\D/g, "");
   const cpfRaw = (body.cpf || body.document || body.customer_cpf || randDigits(11)).toString().replace(/\D/g, "");
   const customerCpf = cpfRaw.padEnd(11, "0").slice(0, 11);
-  const itemTitle = "Livro Falante";
+
+  let token;
+  try {
+    token = await getToken(publicKey, secretKey);
+  } catch (err) {
+    return jsonResponse(502, { success: false, error: "Falha na autenticação: " + String(err) });
+  }
 
   const payload = {
-    nome: customerName,
-    cpf: customerCpf,
-    valor: amountNum,
-    descricao: itemTitle,
+    amount: amountNum,
+    payment_method: "pix",
+    customer: {
+      name: customerName,
+      email: customerEmail,
+      document: customerCpf,
+    },
   };
 
-  const headers = {
-    "Content-Type": "application/json",
-    "X-Client-Id": clientId,
-    "X-Client-Secret": clientSecret,
-  };
-
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   let resp;
   try {
-    resp = await postWithRetry(`${GOTHAM_BASE}/api/v1/pix/cashin`, payload, headers);
+    resp = await fetch(`${PLAY_BASE}/transactions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
   } catch (err) {
+    clearTimeout(timeout);
     return jsonResponse(502, { success: false, error: "Falha ao conectar com gateway: " + String(err) });
+  } finally {
+    clearTimeout(timeout);
   }
 
   const text = await resp.text();
@@ -130,15 +151,16 @@ exports.handler = async (event) => {
   }
 
   const pixCode =
-    data.pixCode || data.brcode || data.payload || data.pix_code ||
-    data.qrcode || data.qr_code || data.emv || null;
+    data.pix_code || data.pixCode || data.brcode || data.payload ||
+    data.qrcode || data.qr_code || data.emv ||
+    data.pix?.code || data.pix?.brcode || data.pix?.payload || null;
 
   const qrCodeImage =
-    data.qrCodeImage || data.qr_code_image || data.qrCode ||
-    data.qr_code || data.imagemQrCode || null;
+    data.qr_code_image || data.qrCodeImage || data.qrCode ||
+    data.pix?.qr_code_image || data.pix?.qrCodeImage || null;
 
   const transactionId =
-    data.id || data.transactionId || data.transaction_id ||
+    data.id || data.transaction_id || data.transactionId ||
     data.pedidoId || data.idTransacao || null;
 
   try {
