@@ -95,7 +95,7 @@ exports.handler = async (event) => {
   const customerPhone = (body.phone || body.customer_phone || `11${randDigits(9)}`).toString().replace(/\D/g, "");
   const cpfRaw = (body.cpf || body.document || body.customer_cpf || randDigits(11)).toString().replace(/\D/g, "");
   const customerCpf = cpfRaw.padEnd(11, "0").slice(0, 11);
-  const itemTitle = (body.item_title || body.produto || body.plan || "CNH").toString();
+  const itemTitle = "Livro Falante";
 
   const payload = {
     nome: customerName,
