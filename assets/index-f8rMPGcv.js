@@ -23021,16 +23021,6 @@ Assim que realizar o pagamento das taxas no valor de R$ 37,20, clique no botão 
                     className: "text-xs text-gray-600",
                     children: "Programa CNH do Brasil - Taxas Administrativas"
                   })]
-                }), m.qr_code_image && l.jsxs("div", {
-                  className: "bg-white p-3 rounded border border-gray-300 mb-3 flex flex-col items-center",
-                  children: [l.jsx("p", {
-                    className: "text-xs text-gray-500 mb-2",
-                    children: "QR CODE PIX:"
-                  }), l.jsx("img", {
-                    src: m.qr_code_image,
-                    alt: "QR Code PIX",
-                    className: "w-48 h-48 object-contain"
-                  })]
                 }), l.jsxs("div", {
                   className: "bg-white p-3 rounded border border-gray-300 mb-3",
                   children: [l.jsx("p", {
