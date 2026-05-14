@@ -2,9 +2,6 @@ const { getSupabase } = require("./lib/supabase");
 
 const PLAY_BASE = "https://api.playpayments.com.br/v1";
 
-let cachedToken = null;
-let tokenExpiry = 0;
-
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -16,34 +13,6 @@ function jsonResponse(statusCode, body) {
     },
     body: JSON.stringify(body),
   };
-}
-
-async function getToken(publicKey, secretKey) {
-  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  try {
-    const resp = await fetch(`${PLAY_BASE}/auth`, {
-      method: "POST",
-      headers: {
-        "X-Public-Key": publicKey,
-        "X-Secret-Key": secretKey,
-      },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    const text = await resp.text();
-    if (!resp.ok) throw new Error(`Auth falhou (${resp.status}): ${text}`);
-    const data = JSON.parse(text);
-    const token = data.token || data.access_token || data.accessToken;
-    if (!token) throw new Error("Token não encontrado na resposta de auth");
-    cachedToken = token;
-    tokenExpiry = Date.now() + 50 * 60 * 1000;
-    return token;
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 exports.handler = async (event) => {
@@ -81,13 +50,6 @@ exports.handler = async (event) => {
     return jsonResponse(400, { success: false, error: "Informe o transactionId" });
   }
 
-  let token;
-  try {
-    token = await getToken(publicKey, secretKey);
-  } catch (err) {
-    return jsonResponse(502, { success: false, error: "Falha na autenticação: " + String(err) });
-  }
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   let statusResp;
@@ -96,7 +58,8 @@ exports.handler = async (event) => {
     statusResp = await fetch(`${PLAY_BASE}/transactions/${encodeURIComponent(transactionId)}`, {
       method: "GET",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": `Bearer ${secretKey}`,
+        "X-Public-Key": publicKey,
       },
       signal: controller.signal,
     });

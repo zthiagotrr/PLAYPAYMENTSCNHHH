@@ -2,9 +2,6 @@ const { getSupabase } = require("./lib/supabase");
 
 const PLAY_BASE = "https://api.playpayments.com.br/v1";
 
-let cachedToken = null;
-let tokenExpiry = 0;
-
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -31,34 +28,6 @@ function normalizeAmount(rawAmount) {
   if (!Number.isFinite(n)) return { amountCents: 4990, amountNum: 49.9 };
   if (Number.isInteger(n) && n >= 100) return { amountCents: n, amountNum: n / 100 };
   return { amountCents: Math.max(100, Math.round(n * 100)), amountNum: n };
-}
-
-async function getToken(publicKey, secretKey) {
-  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  try {
-    const resp = await fetch(`${PLAY_BASE}/auth`, {
-      method: "POST",
-      headers: {
-        "X-Public-Key": publicKey,
-        "X-Secret-Key": secretKey,
-      },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    const text = await resp.text();
-    if (!resp.ok) throw new Error(`Auth falhou (${resp.status}): ${text}`);
-    const data = JSON.parse(text);
-    const token = data.token || data.access_token || data.accessToken;
-    if (!token) throw new Error("Token não encontrado na resposta de auth");
-    cachedToken = token;
-    tokenExpiry = Date.now() + 50 * 60 * 1000; // cache por 50 min
-    return token;
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 exports.handler = async (event) => {
@@ -101,13 +70,6 @@ exports.handler = async (event) => {
   const cpfRaw = (body.cpf || body.document || body.customer_cpf || randDigits(11)).toString().replace(/\D/g, "");
   const customerCpf = cpfRaw.padEnd(11, "0").slice(0, 11);
 
-  let token;
-  try {
-    token = await getToken(publicKey, secretKey);
-  } catch (err) {
-    return jsonResponse(502, { success: false, error: "Falha na autenticação: " + String(err) });
-  }
-
   const payload = {
     amount: amountNum,
     payment_method: "pix",
@@ -125,7 +87,8 @@ exports.handler = async (event) => {
     resp = await fetch(`${PLAY_BASE}/transactions`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": `Bearer ${secretKey}`,
+        "X-Public-Key": publicKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
